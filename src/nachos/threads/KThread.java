@@ -43,12 +43,15 @@ public class KThread {
      * create an idle thread as well.
      */
     public KThread() {
+    //若不是第一个线程，创建一个新的TCB
 	if (currentThread != null) {
 	    tcb = new TCB();
-	}	    
+	}
+	//若当前线程是第一个线程
 	else {
 	    readyQueue = ThreadedKernel.scheduler.newThreadQueue(false);
-	    readyQueue.acquire(this);	    
+	    readyQueue.acquire(this);	
+//	    joinQueue = ThreadedKernel.scheduler.newThreadQueue(true);
 
 	    currentThread = this;
 	    tcb = TCB.currentTCB();
@@ -175,11 +178,12 @@ public class KThread {
      * Finish the current thread and schedule it to be destroyed when it is
      * safe to do so. This method is automatically called when a thread's
      * <tt>run</tt> method returns, but it may also be called directly.
-     *
+     *可以直接调用，也会在方法执行完后自动调用
      * The current thread cannot be immediately destroyed because its stack and
      * other execution state are still in use. Instead, this thread will be
      * destroyed automatically by the next thread to run, when it is safe to
      * delete this thread.
+     * 当前线程不能被直接校徽，因为它的栈以及其他执行状态还在使用中。在下一个线程运行时，当前进程自动被销毁，那时删除线程是安全的。
      */
     public static void finish() {
 	Lib.debug(dbgThread, "Finishing thread: " + currentThread.toString());
@@ -191,7 +195,15 @@ public class KThread {
 	Lib.assert(toBeDestroyed == null);
 	toBeDestroyed = currentThread;
 
-
+	if(currentThread.joinQueue!=null){
+		KThread waitThread= currentThread.joinQueue.nextThread(); //调用等待队列上的第一个进程;
+		while (waitThread != null) //循环唤醒
+		{
+		    waitThread.ready(); //唤醒等待队列上所有被阻塞的进程
+		    waitThread= currentThread.joinQueue.nextThread(); //调用等待队列上的第一个进程
+		}
+	}
+	
 	currentThread.status = statusFinished;
 	
 	sleep();
@@ -252,6 +264,7 @@ public class KThread {
     /**
      * Moves this thread to the ready state and adds this to the scheduler's
      * ready queue.
+     * 将这个线程改编为就绪状态并添加到调度器的就绪队列
      */
     public void ready() {
 	Lib.debug(dbgThread, "Ready thread: " + toString());
@@ -274,9 +287,29 @@ public class KThread {
      */
     public void join() {
 	Lib.debug(dbgThread, "Joining to thread: " + toString());
-
+	//不能自己调用join自己
 	Lib.assert(this != currentThread);
-
+//	Disable interrupts;关中断
+	Machine.interrupt().setStatus(false);
+//	  if (joinQueue not be initiated) {
+//	      create a new thread queue (joinQueue) with transfer priority flag opened
+//	      joinQueue acquires this thread as holder
+//	  }
+	if(joinQueue == null){
+		joinQueue=ThreadedKernel.scheduler.newThreadQueue(true);
+		joinQueue.acquire(this);
+	}
+//	  If (CurrentThread != self) and (status is not Finished) {
+//	      add current thread to join queue
+//	      sleep current thread 
+//	  }
+	if(currentThread!=this && status!=statusFinished ){
+		joinQueue.waitForAccess(currentThread);
+		KThread.sleep();
+	}
+//
+//	  Re-enable interrupts;
+		Machine.interrupt().setStatus(true);
     }
 
     /**
@@ -353,6 +386,7 @@ public class KThread {
     /**
      * Prepare this thread to be run. Set <tt>status</tt> to
      * <tt>statusRunning</tt> and check <tt>toBeDestroyed</tt>.
+     * 当前线程准备运行
      */
     protected void restoreState() {
 	Lib.debug(dbgThread, "Running thread: " + currentThread.toString());
@@ -390,7 +424,9 @@ public class KThread {
 	    for (int i=0; i<5; i++) {
 		System.out.println("*** thread " + which + " looped "
 				   + i + " times");
-		currentThread.yield();
+		System.out.println("But "+which+" yield");
+		KThread.yield();
+
 	    }
 	}
 
@@ -403,8 +439,22 @@ public class KThread {
     public static void selfTest() {
 	Lib.debug(dbgThread, "Enter KThread.selfTest");
 	
-	new KThread(new PingTest(1)).setName("forked thread").fork();
-	new PingTest(0).run();
+//	new KThread(new PingTest(1)).setName("forked thread").fork();
+//	new PingTest(0).run();
+	//task1 测试
+	 	KThread a = new KThread(new PingTest(1));
+	 	KThread b = new KThread(new PingTest(2));
+	 	KThread c = new KThread(new PingTest(3));
+	    System.out.println("thread 1 启动");
+	    a.fork();
+	    b.fork();
+	    c.fork();
+	    System.out.println("调用join方法，当前线程阻塞，thread 1 执行结束后thread 0 再执行【thread 0 为主线程】");
+	    a.join();
+	    b.join();
+	    c.join();
+	    System.out.println("thread 0 开始执行");
+	    new PingTest(0).run();
     }
 
     private static final char dbgThread = 't';
@@ -437,11 +487,13 @@ public class KThread {
      * threads.
      */
     private int id = numCreated++;
-    /** Number of times the KThread constructor was called. */
+    /** Number of times the KThread constructor was called. KThread构造器被调用的次数*/
     private static int numCreated = 0;
 
     private static ThreadQueue readyQueue = null;
     private static KThread currentThread = null;
     private static KThread toBeDestroyed = null;
     private static KThread idleThread = null;
+    //为join方法而设计。等待当前进程结束的进程队列
+    private ThreadQueue joinQueue=null;
 }

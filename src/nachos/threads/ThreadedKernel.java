@@ -4,25 +4,27 @@ import nachos.machine.*;
 
 /**
  * A multi-threaded OS kernel.
+ * 一个多线程操作系统内核
  */
 public class ThreadedKernel extends Kernel {
     /**
      * Allocate a new multi-threaded kernel.
      */
     public ThreadedKernel() {
-	super();
+    	super();
     }
 
     /**
      * Initialize this kernel. Creates a scheduler, the first thread, and an
      * alarm, and enables interrupts. Creates a file system if necessary.   
+     * 创建调度程序、第一个线程、时钟、允许中断、
      */
     public void initialize(String[] args) {
-	// set scheduler
+	// set scheduler设置调度程序
 	String schedulerName = Config.getString("ThreadedKernel.scheduler");
 	scheduler = (Scheduler) Lib.constructObject(schedulerName);
 
-	// set fileSystem
+	// set fileSystem设置文件系统
 	String fileSystemName = Config.getString("ThreadedKernel.fileSystem");
 	if (fileSystemName != null)
 	    fileSystem = (FileSystem) Lib.constructObject(fileSystemName);
@@ -31,7 +33,7 @@ public class ThreadedKernel extends Kernel {
 	else
 	    fileSystem = null;
 
-	// start threading
+	// start threading启动线程
 	new KThread(null);
 
 	alarm  = new Alarm();

@@ -10,17 +10,21 @@ import java.util.LinkedList;
  * <p>
  * A condition variable is a synchronization primitive that does not have
  * a value (unlike a semaphore or a lock), but threads may still be queued.
+ * 条件变量是一种没有值（不像信号量或锁），但是线程仍然可以排入队列的同步原语。
  *
  * <p><ul>
  *
  * <li><tt>sleep()</tt>: atomically release the lock and relinkquish the CPU
  * until woken; then reacquire the lock.
+ * 自动释放锁，放弃CPU直到被唤醒，然后重新获得锁
  *
  * <li><tt>wake()</tt>: wake up a single thread sleeping in this condition
  * variable, if possible.
+ * 唤醒一个在这个条件变量上睡眠的线程
  *
  * <li><tt>wakeAll()</tt>: wake up all threads sleeping inn this condition
  * variable.
+ * 唤醒所有在这个条件变量上睡眠的线程
  *
  * </ul>
  *
