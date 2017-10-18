@@ -6,6 +6,7 @@ import java.util.LinkedList;
 
 /**
  * An implementation of condition variables built upon semaphores.
+ * 通过信号量实现的条件变量
  *
  * <p>
  * A condition variable is a synchronization primitive that does not have
@@ -32,13 +33,14 @@ import java.util.LinkedList;
  * Every condition variable is associated with some lock. Multiple condition
  * variables may be associated with the same lock. All three condition variable
  * operations can only be used while holding the associated lock.
- *
+ *每个条件变量与一些锁相关，多个条件变量可以与同样的锁相关，三个条件变量操作都只能在持有相关锁时进行。
  * <p>
  * In Nachos, condition variables are summed to obey <i>Mesa-style</i>
  * semantics. When a <tt>wake()</tt> or <tt>wakeAll()</tt> wakes up another
  * thread, the woken thread is simply put on the ready list, and it is the
  * responsibility of the woken thread to reacquire the lock (this reacquire is
  * taken core of in <tt>sleep()</tt>).
+ * 被唤醒的线程简单的放在就绪列表中，而且重新获得锁被唤醒线程的任务（重新获得被）
  *
  * <p>
  * By contrast, some implementations of condition variables obey
@@ -46,6 +48,8 @@ import java.util.LinkedList;
  * gives up the lock and the CPU to the woken thread, which runs immediately
  * and gives the lock and CPU back to the waker when the woken thread exits the
  * critical section.
+ * 相反，一些条件变量的实现遵循Hoare风格的语义，这种情况下调用wake()的线程放弃锁与cpu来唤醒线程，立即运行并在
+ * 被唤醒的线程退出临界区时把锁和cpu给唤醒线程者
  *
  * <p>
  * The consequence of using Mesa-style semantics is that some other thread

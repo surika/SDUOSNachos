@@ -1,5 +1,8 @@
 package nachos.threads;
 
+import java.util.Iterator;
+import java.util.LinkedList;
+
 import nachos.machine.*;
 
 /**
@@ -7,6 +10,7 @@ import nachos.machine.*;
  * until a certain time.
  */
 public class Alarm {
+	LinkedList waitingList;
     /**
      * Allocate a new Alarm. Set the machine's timer interrupt handler to this
      * alarm's callback.
@@ -15,6 +19,7 @@ public class Alarm {
      * alarm.
      */
     public Alarm() {
+    waitingList=new LinkedList();
 	Machine.timer().setInterruptHandler(new Runnable() {
 		public void run() { timerInterrupt(); }
 	    });
@@ -27,7 +32,18 @@ public class Alarm {
      * that should be run.
      */
     public void timerInterrupt() {
-	KThread.currentThread().yield();
+//    KThread.currentThread().yield();
+    boolean status=Machine.interrupt().disable();
+	for(Iterator it=waitingList.iterator();it.hasNext();){
+		Waitings wait=(Waitings) it.next();
+		if(Machine.timer().getTime()>=wait.getDueTime()){
+			it.remove();
+			wait.getThread().ready();
+		}
+		
+	}
+	Machine.interrupt().restore(status);
+	
     }
 
     /**
@@ -46,8 +62,35 @@ public class Alarm {
      */
     public void waitUntil(long x) {
 	// for now, cheat just to get something working (busy waiting is bad)
+    boolean status=Machine.interrupt().disable();
 	long wakeTime = Machine.timer().getTime() + x;
-	while (wakeTime > Machine.timer().getTime())
-	    KThread.yield();
+	Waitings w=new Waitings(wakeTime,KThread.currentThread());
+	waitingList.add(w);
+	KThread.sleep();
+	Machine.interrupt().restore(status);
+//	while (wakeTime > Machine.timer().getTime())
+//	    KThread.yield();
+	
+    }
+    
+    class Waitings{
+    	private long dueTime;
+    	private KThread thread;
+    	Waitings(long dt,KThread th){
+    		dueTime=dt;
+    		thread=th;
+    	}
+		public long getDueTime() {
+			return dueTime;
+		}
+		public void setDueTime(long dueTime) {
+			this.dueTime = dueTime;
+		}
+		public KThread getThread() {
+			return thread;
+		}
+		public void setThread(KThread thread) {
+			this.thread = thread;
+		}
     }
 }

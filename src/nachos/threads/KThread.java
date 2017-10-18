@@ -442,19 +442,22 @@ public class KThread {
 //	new KThread(new PingTest(1)).setName("forked thread").fork();
 //	new PingTest(0).run();
 	//task1 测试
-	 	KThread a = new KThread(new PingTest(1));
-	 	KThread b = new KThread(new PingTest(2));
-	 	KThread c = new KThread(new PingTest(3));
-	    System.out.println("thread 1 启动");
+	boolean status=Machine.interrupt().disable();
+		Communicator c=new Communicator();
+	 	KThread a = new KThread(new Speaker(c)).setName("* Speakerr 1 *");
+	 	KThread b = new KThread(new Listener(c)).setName("* Listener 1 *");
+	 	KThread bb = new KThread(new Listener(c)).setName("* Listener 2 *");
+	 	KThread aa = new KThread(new Speaker(c)).setName("* Speakerr 2 *");
+	 	KThread cc = new KThread(new Speaker(c)).setName("* Speakerr 3 *");
+	    System.out.println("begin running...");
 	    a.fork();
+	    System.out.println("a.run");
 	    b.fork();
-	    c.fork();
-	    System.out.println("调用join方法，当前线程阻塞，thread 1 执行结束后thread 0 再执行【thread 0 为主线程】");
-	    a.join();
-	    b.join();
-	    c.join();
-	    System.out.println("thread 0 开始执行");
-	    new PingTest(0).run();
+	    System.out.println("b.run");
+	    aa.fork();
+	    cc.fork();
+	    bb.fork();
+	    Machine.interrupt().restore(status);
     }
 
     private static final char dbgThread = 't';
@@ -496,4 +499,37 @@ public class KThread {
     private static KThread idleThread = null;
     //为join方法而设计。等待当前进程结束的进程队列
     private ThreadQueue joinQueue=null;
+}
+
+class Speaker implements Runnable{
+
+	Communicator c;
+	public Speaker(Communicator con){
+		c=con;
+	}
+	public void run() {
+		for(int i=0;i<5;i++)
+		{
+			System.out.println(KThread.currentThread().getName()+" "+i+" * Speaker出发了，他想说 "+i);
+			c.speak(i);
+			System.out.println(KThread.currentThread().getName()+" "+i+" * 接回来一个Listener");
+		}
+	}
+	
+}
+class Listener implements Runnable{
+
+	Communicator c;
+	public Listener(Communicator con){
+		c=con;
+	}
+	public void run() {
+		for(int i=0;i<5;i++){
+			System.out.println(KThread.currentThread().getName()+" "+i+" * Listener要出发了");
+			int t=c.listen();
+			System.out.println(KThread.currentThread().getName()+" "+i+" *Listener叫醒的Speaker说了"+t);
+//			System.out.println(KThread.currentThread().getName()+" "+i+" * Listener回来了，听见了"+t);
+		}
+	}
+	
 }

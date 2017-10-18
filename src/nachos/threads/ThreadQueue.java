@@ -4,28 +4,29 @@ package nachos.threads;
  * Schedules access to some sort of resource with limited access constraints. A
  * thread queue can be used to share this limited access among multiple
  * threads.
- *
+ *一个线程队列可以用来在不同线程间分享这些有限的资源
  * <p>
  * Examples of limited access in Nachos include:
- *
+ *有限资源举例：
  * <ol>
  * <li>the right for a thread to use the processor. Only one thread may run on
  * the processor at a time.
- *
+ *使用处理器的权利。一次只能有一个线程在处理器上运行
  * <li>the right for a thread to acquire a specific lock. A lock may be held by
  * only one thread at a time.
- *
+ *锁
  * <li>the right for a thread to return from <tt>Semaphore.P()</tt> when the
  * semaphore is 0. When another thread calls <tt>Semaphore.V()</tt>, only one
  * thread waiting in <tt>Semaphore.P()</tt> can be awakened.
- *
+ *信号量
  * <li>the right for a thread to be woken while sleeping on a condition
  * variable. When another thread calls <tt>Condition.wake()</tt>, only one
  * thread sleeping on the condition variable can be awakened.
- *
+ *条件变量
  * <li>the right for a thread to return from <tt>KThread.join()</tt>. Threads
  * are not allowed to return from <tt>join()</tt> until the target thread has
  * finished.
+ * 从join()方法返回
  * </ol>
  *
  * All these cases involve limited access because, for each of them, it is not
@@ -36,6 +37,7 @@ package nachos.threads;
  *
  * <p>
  * All thread queue methods must be invoked with <b>interrupts disabled</b>.
+ * 所有线程队列方法必须关中断
  */
 public abstract class ThreadQueue {
     /**
@@ -65,6 +67,7 @@ public abstract class ThreadQueue {
      * Notify this thread queue that another thread can receive access. Choose
      * and return the next thread to receive access, or <tt>null</tt> if there
      * are no threads waiting.
+     * 入队
      *
      * <p>
      * If the limited access object transfers priority, and if there are other
@@ -81,18 +84,23 @@ public abstract class ThreadQueue {
      * going through <tt>request()</tt> and <tt>nextThread()</tt>. For example,
      * if a thread acquires a lock that no other threads are waiting for, it
      * should call this method.
+     * 通知这个线程队列一个线程获得了资源，没有通过request()和nextThread().举例来说，如果一个线程
+     * 请求一个没有其他线程在等待的锁，它应该调用此方法。
      *
      * <p>
      * This method should not be called for a thread returned from
      * <tt>nextThread()</tt>.
+     * 对于从nextThread()返回的线程，这个方法不应该被调用
      *
      * @param	thread	the thread that has received access, but was not
      * 			returned from <tt>nextThread()</tt>.
+     * 刚刚收到资源，且不是从nextThread()返回的线程
      */
     public abstract void acquire(KThread thread);
 
     /**
      * Print out all the threads waiting for access, in no particular order.
+     * 打印所有在等待资源的线程
      */
     public abstract void print();
 }
