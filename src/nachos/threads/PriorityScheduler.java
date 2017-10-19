@@ -140,15 +140,14 @@ public class PriorityScheduler extends Scheduler {
     protected class PriorityQueue extends ThreadQueue {
     	
     	/** The queue  waiting on this resource */
-        private LinkedList waitQueue = new LinkedList();  // hy+
+        private LinkedList waitQueue = new LinkedList();
 
         /** The ThreadState corresponds to the holder of the resource */
-        private ThreadState holder = null;             // hy+
+        private ThreadState holder = null; 
 
         /** Set to true when a new thread is added to the queue, 
          *  or any of the queues in the waitQueue flag themselves as dirty */
-        private boolean dirty;                  // hy+ 
-
+        private boolean dirty;               
         /** The cached highest of the effective priorities in the waitQueue. 
          *  This value is invalidated while dirty is true */
         private int effectivePriority; 
@@ -177,7 +176,21 @@ public class PriorityScheduler extends Scheduler {
 	public KThread nextThread() {
 	    Lib.assert(Machine.interrupt().disabled());
 	    // TODO:implement me
-	    return null;
+//	    if I have a holder and I transfer priority, remove myself from the holder's resource list
+//	    if waitQueue is empty, return null
+//	       ThreadState firstThread = pickNextThread();
+//	       remove firstThread from waitQueue
+//	       firstThread.acquire(this);
+//	    return firstThread
+	    if(holder!=null && transferPriority){
+	    	holder.res.remove(this);
+	    }
+	    if(waitQueue.isEmpty())
+	    	return null;
+	    ThreadState firstThread=pickNextThread();
+	    waitQueue.remove(firstThread);
+	    firstThread.acquire(this);
+	    return firstThread.thread;
 	}
 
 	/**
@@ -189,7 +202,18 @@ public class PriorityScheduler extends Scheduler {
 	 */
 	protected ThreadState pickNextThread() {
 		 // TODO:implement me
-	    return null;
+//		ThreadState ret = null
+//				for each ThreadState ts in waitQueue
+//				   if ret is null OR ts has higher priority/time ranking than ret
+//				      set ret to ts
+//				return ret;
+		ThreadState ret=null;
+		for (Iterator it = waitQueue.iterator(); it.hasNext();) {  
+            ThreadState ts = getThreadState((KThread) it.next());
+            if(ret==null || ts.getEffectivePriority()>ts.getEffectivePriority() )
+            	ret=ts;
+        }
+	    return ret;
 	}
 	
 	public int getEffectivePriority() {
@@ -280,6 +304,7 @@ public class PriorityScheduler extends Scheduler {
 		 */
     	public ThreadState(KThread thread) {
 	    this.thread = thread;
+	    res=new LinkedList();
 	    //构造时使用默认的优先级
 	    setPriority(priorityDefault);
     	}
@@ -345,7 +370,8 @@ public class PriorityScheduler extends Scheduler {
 		public void waitForAccess(PriorityQueue waitQueue) {
 			Lib.assert(Machine.interrupt().disabled());
 			//判断要加入的队列中有没有我，即是否还是我正在等待的这个资源，如果不是就继续，是则不用重复操作
-			Lib.assert(waitQueue.waitQueue.indexOf(thread)==-1);
+//			Lib.assert(waitQueue.waitQueue.indexOf(thread)==-1);
+			if(waitQueue.waitQueue.indexOf(thread)!=-1)return;
 			
 			waitQueue.waitQueue.add(thread);
 			//申请新资源，加入了新队列，刚加入的队列可能因为我的加入而改变优先级

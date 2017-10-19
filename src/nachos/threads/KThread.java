@@ -266,9 +266,10 @@ public class KThread {
      * ready queue.
      * 将这个线程改编为就绪状态并添加到调度器的就绪队列
      */
+    static int times=0;
     public void ready() {
 	Lib.debug(dbgThread, "Ready thread: " + toString());
-	
+	System.out.println(currentThread.name+" "+(++times)+" STATUS:"+status);
 	Lib.assert(Machine.interrupt().disabled());
 	Lib.assert(status != statusReady);
 	
@@ -421,13 +422,14 @@ public class KThread {
 	}
 	
 	public void run() {
-	    for (int i=0; i<5; i++) {
-		System.out.println("*** thread " + which + " looped "
-				   + i + " times");
-		System.out.println("But "+which+" yield");
-		KThread.yield();
+		System.out.println("hello");
+//	    for (int i=0; i<5; i++) {
+//		System.out.println("*** thread " + which + " looped "
+//				   + i + " times");
+//		System.out.println("But "+which+" yield");
+//		KThread.yield();
 
-	    }
+//	    }
 	}
 
 	private int which;
@@ -442,8 +444,13 @@ public class KThread {
 //	new KThread(new PingTest(1)).setName("forked thread").fork();
 //	new PingTest(0).run();
 	//task1 测试
-	boolean status=Machine.interrupt().disable();
-		Communicator c=new Communicator();
+		boolean status=Machine.interrupt().disable();
+		test5();
+	    Machine.interrupt().restore(status);
+    }
+
+    private static void test4(){
+    	Communicator c=new Communicator();
 	 	KThread a = new KThread(new Speaker(c)).setName("* Speakerr 1 *");
 	 	KThread b = new KThread(new Listener(c)).setName("* Listener 1 *");
 	 	KThread bb = new KThread(new Listener(c)).setName("* Listener 2 *");
@@ -457,9 +464,30 @@ public class KThread {
 	    aa.fork();
 	    cc.fork();
 	    bb.fork();
-	    Machine.interrupt().restore(status);
     }
-
+    
+    private static void test5(){
+    	KThread kt2 = new KThread(new PingTest(2)).setName("kt2");
+        KThread kt3 = new KThread(new PingTest(3)).setName("kt3");
+        KThread kt4 = new KThread(new PingTest(4)).setName("kt4");
+        PriorityScheduler ps = new PriorityScheduler();
+        ThreadQueue tq1 = ps.newThreadQueue(true);
+        ThreadQueue tq2 = ps.newThreadQueue(false);     
+        tq1.waitForAccess(kt4);
+        tq1.waitForAccess(kt3);
+        tq1.waitForAccess(kt2);
+        tq1.acquire(kt2);
+        ps.setPriority(kt2, 2);
+        ps.setPriority(kt3, 3);
+        ps.setPriority(kt4, 4);
+        System.out.println("kt2's Priority is " + ps.getPriority(kt2));
+        System.out.println("kt2's effectivePriority is " + ps.getEffectivePriority(kt2));
+        System.out.println("kt3's Priority is " + ps.getPriority(kt3));
+        System.out.println("kt3's effectivePriority is " + ps.getEffectivePriority(kt3));
+        KThread temp = tq2.nextThread();
+        temp.fork();
+//        kt3.join();
+    }
     private static final char dbgThread = 't';
 
     /**
